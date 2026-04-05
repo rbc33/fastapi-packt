@@ -62,7 +62,7 @@ async def patch_shipment(id: int, shipment_update: ShipmentUpdate, service:Servi
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="At least one of the fields is required!"
         )
-    shipment = await service.update(id, shipment_update)
+    shipment = await service.update(id, update)
     return shipment
 
 @router.delete("/shipment")
