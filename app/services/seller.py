@@ -1,12 +1,8 @@
-from datetime import datetime, timedelta
-
 import bcrypt
 from fastapi import HTTPException, status
-import jwt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import security_settings
 from app.api.schemas.seller import SellerCreate
 from app.database.models import Seller
 from app.utils import generate_access_token

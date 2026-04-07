@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 from fastapi import HTTPException, status
 
-from app.api.schemas.shipment import ShipmentCreate, ShipmentUpdate
+from app.api.schemas.shipment import ShipmentCreate
 from app.database.models import Shipment, ShipmentStatus
 from sqlalchemy.ext.asyncio import AsyncSession
 
