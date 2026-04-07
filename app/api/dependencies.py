@@ -1,4 +1,5 @@
 from typing import Annotated
+from uuid import UUID
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -37,7 +38,7 @@ async def get_access_token(token: Annotated[str, Depends(oauth2_scheme)]) -> dic
 async def get_current_seller(
     token_data: Annotated[dict, Depends(get_access_token)], session: SessionDep
 ):
-    return await session.get(Seller, token_data["user"]["id"])
+    return await session.get(Seller, UUID(token_data["user"]["id"]))
 
 
 # Seller service dep

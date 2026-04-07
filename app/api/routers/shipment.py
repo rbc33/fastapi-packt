@@ -25,11 +25,11 @@ async def get_shipment(
 
 @router.post("/")
 async def submit_shipment(
-    _: SellerDep,
+    seller: SellerDep,
     shipment: ShipmentCreate,
     service: ShipmentServiceDep,
 ) -> Shipment:
-    return await service.add(shipment)
+    return await service.add(shipment, seller)
 
 
 @router.get("/{field}")
