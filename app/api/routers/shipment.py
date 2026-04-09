@@ -1,8 +1,9 @@
 from typing import Any
+from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, status
 
-from app.api.dependencies import SellerDep, ShipmentServiceDep
+from app.api.dependencies import DeliveryPartnerDep, SellerDep, ShipmentServiceDep
 from app.database.models import Shipment
 from app.api.schemas.shipment import ShipmentCreate, ShipmentRead, ShipmentUpdate
 
@@ -11,7 +12,7 @@ router = APIRouter(prefix="/shipments", tags=["Shipments"])
 
 @router.get("/", response_model=Shipment)
 async def get_shipment(
-    id: int,
+    id: UUID,
     _: SellerDep,
     service: ShipmentServiceDep,
 ):
@@ -35,7 +36,7 @@ async def submit_shipment(
 @router.get("/{field}")
 async def get_shipment_field(
     field: str,
-    id: int,
+    id: UUID,
     _: SellerDep,
     service: ShipmentServiceDep,
 ) -> Any:
@@ -66,8 +67,8 @@ async def get_shipment_field(
 
 @router.patch("/", response_model=ShipmentRead)
 async def patch_shipment(
-    id: int,
-    _: SellerDep,
+    id: UUID,
+    _: DeliveryPartnerDep,
     shipment_update: ShipmentUpdate,
     service: ShipmentServiceDep,
 ) -> Shipment:
@@ -83,7 +84,7 @@ async def patch_shipment(
 
 @router.delete("/")
 async def delete_shipment(
-    id: int,
+    id: UUID,
     _: SellerDep,
     service: ShipmentServiceDep,
 ) -> dict[str, Any]:

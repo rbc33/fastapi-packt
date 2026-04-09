@@ -5,12 +5,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import SQLModel
 
 class BaseService:
+    # def __init__(self, model: Type[SQLModel], session: AsyncSession):
     def __init__(self, model: Type[SQLModel], session: AsyncSession):
         self.model = model
         self.session = session
 
     async def _get(self, id:UUID):
-        return await self.session.get(self.model, id)
+        return await self.session.get(self.model, id) # type: ignore
 
     async def _add(self, entity: SQLModel):
         self.session.add(entity)

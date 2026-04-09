@@ -8,6 +8,7 @@ from sqlmodel import Field, Relationship, SQLModel, UniqueConstraint, Column
 from sqlalchemy.dialects import postgresql
 
 
+
 class ShipmentStatus(str, Enum):
     placed = "placed"
     in_transit = "in_transit"
@@ -25,7 +26,6 @@ class Shipment(SQLModel, table=True):
             primary_key=True,
         )
     ) 
-    address: int
     content: str
     weight: float = Field(le=25)
     destination: int
@@ -49,6 +49,18 @@ class Shipment(SQLModel, table=True):
         back_populates="shipments",
         sa_relationship_kwargs={"lazy": "selectin"},
     )
+
+    @property
+    def active_shipments(self):
+        return [
+            shipment
+            for shipment in self.shipments
+            if shipment.status == ShipmentStatus.delivered
+        ]
+        
+    @property
+    def current_handling_capacity(self):
+        return self.max_handling_capacity - len(self.active_shipments)
 
 class User(SQLModel):
     name: str
@@ -104,3 +116,15 @@ class DeliveryPartner(User, table=True):
         back_populates="delivery_partner",
         sa_relationship_kwargs={"lazy": "selectin"},
     )
+
+    @property
+    def active_shipments(self) -> list[Shipment]:
+        return [
+            shipment
+            for shipment in self.shipments
+            if shipment.status != ShipmentStatus.delivered
+        ]
+
+    @property
+    def current_handling_capacity(self) -> int:
+        return self.max_handling_capacity - len(self.shipments)
