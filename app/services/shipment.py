@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from uuid import UUID
 
 from fastapi import HTTPException, status
 
@@ -6,18 +7,15 @@ from app.api.schemas.shipment import ShipmentCreate
 from app.database.models import Seller, Shipment, ShipmentStatus
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.services.base import BaseService
 
-class ShipmentService:
+
+class ShipmentService(BaseService):
     def __init__(self, session: AsyncSession):
-        self.session = session
+        super().__init__(Shipment, session)
 
-    async def get(self, id: int) -> Shipment:
-        shipment = await self.session.get(Shipment, id)
-        if not shipment:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Given id doesnt exist!"
-            )
-        return shipment
+    async def get(self, id: UUID) -> Shipment | None:
+        return await self._get(id)
 
     async def add(self, shipment_create: ShipmentCreate, seller: Seller) -> Shipment:
         new_shipment = Shipment(
@@ -26,21 +24,18 @@ class ShipmentService:
             estimated_delivery=datetime.now() + timedelta(days=3),
             seller_id=seller.id
         )
-        self.session.add(new_shipment)
-        await self.session.commit()
-        await self.session.refresh(new_shipment)
-        return new_shipment
+        return await self._add(new_shipment)
+     
 
-    async def update(self, id: int, shipment_update: dict) -> Shipment:
+    async def update(self, id: UUID, shipment_update: dict) -> Shipment:
         shipment = await self.get(id)
-        
+        if shipment is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         shipment.sqlmodel_update(shipment_update)
-        self.session.add(shipment)
-        await self.session.commit()
-        await self.session.refresh(shipment)
+        return await self._update(shipment)
 
-        return shipment
-
-    async def delete(self, id: int):
-        await self.session.delete(await self.get(id))
-        await self.session.commit()
+    async def delete(self, id: UUID):
+        shipment = await self.get(id)
+        if shipment is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        await self._delete(shipment)
