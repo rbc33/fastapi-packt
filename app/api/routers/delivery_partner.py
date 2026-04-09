@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.api.dependencies import (
@@ -48,7 +48,13 @@ async def update_delivery_partner(
     partner: DeliveryPartnerDep,
     service: DeliveryPartnerServiceDep,
 ):
-    return await service.update(partner.sqlmodel_update(partner_update))
+    update = partner_update.model_dump(exclude_unset=True)
+    if not update:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="At least one of the fields is required!",
+        )
+    return await service.update(partner.sqlmodel_update(update))
 
 
 # Logout
