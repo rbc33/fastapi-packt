@@ -24,6 +24,7 @@ class Shipment(SQLModel, table=True):
             primary_key=True,
         )
     ) 
+    address: int
     content: str
     weight: float = Field(le=25)
     destination: int
