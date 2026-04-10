@@ -66,27 +66,31 @@ async def get_shipment_field(
 
 
 @router.patch("/", response_model=ShipmentRead)
-async def patch_shipment(
+async def update_shipment(
     id: UUID,
-    _: DeliveryPartnerDep,
     shipment_update: ShipmentUpdate,
+    partner: DeliveryPartnerDep,
     service: ShipmentServiceDep,
-) -> Shipment:
-    update = shipment_update.model_dump(exclude_unset=True)
+):
+    # Update data with given fields
+    update = shipment_update.model_dump(exclude_none=True)
+
     if not update:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="At least one of the fields is required!",
+            detail="No data provided to update",
         )
-    shipment = await service.update(id, update)
-    return shipment
+
+    return await service.update(id, shipment_update, partner)
 
 
-@router.delete("/")
-async def delete_shipment(
+        
+        
+@router.get("/cancel", response_model=ShipmentRead)
+async def cancel_shipment(
     id: UUID,
-    _: SellerDep,
+    seller: SellerDep,
     service: ShipmentServiceDep,
-) -> dict[str, Any]:
-    await service.delete(id)
-    return {"detail": f"Shipment with #{id} is deleted!"}
+):
+    return await service.cancel(id, seller)
+

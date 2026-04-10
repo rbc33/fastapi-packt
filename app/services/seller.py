@@ -1,14 +1,8 @@
-import bcrypt
-from fastapi import HTTPException, status
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.seller import SellerCreate
 from app.database.models import Seller
 from app.services.user import UserService
-from app.utils import generate_access_token
-
-
 
 
 class SellerService(UserService):
