@@ -3,7 +3,6 @@ from uuid import UUID
 
 from fastapi import HTTPException, status
 
-from app.api.routers import shipment
 from app.api.schemas.shipment import ShipmentCreate, ShipmentUpdate
 from app.database.models import DeliveryPartner, Seller, Shipment, ShipmentStatus
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -76,3 +75,30 @@ class ShipmentService(BaseService):
             )
 
         return await self._update(shipment)
+
+    async def cancel(self, id: UUID, seller: Seller) -> Shipment:
+            shipment = await self.get(id)
+            if shipment is None:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+            if shipment.seller_id != seller.id:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Not Authorized",
+                )
+            
+            event = await self.event_service.add(
+                shipment=shipment,
+                status=ShipmentStatus.cancelled,
+            )
+
+            shipment.timeline.append(event)
+            return shipment
+
+
+    # Delete a shipment
+    async def delete(self, id: UUID) -> None:
+        shipment = await self.get(id)
+        if shipment is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        await self._delete(shipment)

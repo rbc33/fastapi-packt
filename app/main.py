@@ -1,7 +1,9 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import BackgroundTasks, FastAPI
 from scalar_fastapi import get_scalar_api_reference
+
+from app.services.notification import NotificationService
 
 #from .database import Database
 from .database.session import create_db_table
@@ -35,3 +37,19 @@ def get_scalar_docs():
         title="Scalar API"
 
     )
+
+@app.get("/mail")
+async def send_mail(task: BackgroundTasks):
+
+    task.add_task(NotificationService().send_email,
+        subject="Test Email",
+        body="This is a test email sent from FastAPI using FastMail.",
+        recipients=["xifof43652@nyspring.com"]
+        )
+    
+    # await NotificationService().send_email(
+    #     subject="Test Email",
+    #     body="This is a test email sent from FastAPI using FastMail.",
+    #     recipients=["xifof43652@nyspring.com"]
+    #     )
+    return {"detail": "Email sent successfully!"}
