@@ -54,26 +54,37 @@ class ShipmentEventService(BaseService):
                 return f"scanned at {location}"
 
     async def _notify(self, shipment: Shipment, status: ShipmentStatus):
+        
+        if status == ShipmentStatus.in_transit:
+            return
+
+        subject: str
+        context = {}
+        template_name: str
+
         match status:
             case ShipmentStatus.placed:
-                subject = "Shipment placed"
-                body = f"Your shipment with id {shipment.id} has been placed and assigned to {shipment.delivery_partner.name}"
-            case ShipmentStatus.in_transit:
-                subject = "Shipment in transit"
-                body = f"Your shipment with id {shipment.id} is in transit"
+                subject="Your Order is Shipped 🚛"
+                context["seller"] = shipment.seller.name
+                context["partner"] = shipment.delivery_partner.name
+                template_name="mail_placed.html"
+
             case ShipmentStatus.out_for_delivery:
-                subject = "Shipment out for delivery"
-                body = f"Your shipment with id {shipment.id} is out for delivery"
+                subject="Your Order is Arriving Soon 🛵"
+                template_name = "mail_out_for_delivery.html"
+                
             case ShipmentStatus.delivered:
-                subject = "Shipment delivered"
-                body = f"Your shipment with id {shipment.id} has been successfully delivered"
+                subject = "Your Order is Delivered ✅"
+                context["seller"] = shipment.seller.name
+                template_name = "mail_delivered.html"
+
             case ShipmentStatus.cancelled:
-                subject = "Shipment cancelled"
-                body = f"Your shipment with id {shipment.id} has been cancelled by the seller"
-            case _:
-                return
-        await self.notification_service.send_email(
-            subject=subject,
-            body=body,
+                subject = "Your Order is Cancelled ❌"
+                template_name = "mail_cancelled.html"
+
+        await self.notification_service.send_email_with_template(
             recipients=[shipment.client_contact_email],
+            subject=subject,
+            context=context,
+            template_name=template_name,
         )

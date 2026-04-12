@@ -7,7 +7,7 @@ from app.api.dependencies import DeliveryPartnerDep, SellerDep, ShipmentServiceD
 from app.database.models import Shipment
 from app.api.schemas.shipment import ShipmentCreate, ShipmentRead, ShipmentUpdate
 
-router = APIRouter(prefix="/shipments", tags=["Shipments"])
+router = APIRouter(prefix="/shipment", tags=["Shipment"])
 
 
 @router.get("/", response_model=Shipment)
