@@ -28,7 +28,7 @@ class ShipmentEventService(BaseService):
             shipment_id=shipment.id,
             location=location,
             status=status,
-            desription=description if description else self._generate_description(status, location),
+            description=description if description else self._generate_description(status, location),
         )
         await self._notify(shipment, status)
         return await self._add(new_event)
@@ -65,6 +65,7 @@ class ShipmentEventService(BaseService):
         match status:
             case ShipmentStatus.placed:
                 subject="Your Order is Shipped 🚛"
+                context["id"] = shipment.id
                 context["seller"] = shipment.seller.name
                 context["partner"] = shipment.delivery_partner.name
                 template_name="mail_placed.html"

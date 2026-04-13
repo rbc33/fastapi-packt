@@ -1,7 +1,10 @@
 from contextlib import asynccontextmanager
+from datetime import datetime
 
-from fastapi import BackgroundTasks, FastAPI
+from fastapi import BackgroundTasks, FastAPI, Response
+from fastapi.responses import JSONResponse
 from scalar_fastapi import get_scalar_api_reference
+from sqlalchemy import JSON
 
 from app.services.notification import NotificationService
 
@@ -20,14 +23,22 @@ app = FastAPI(lifespan=lifespan_handler)
 
 app.include_router(master_router)
 
-# db = Database()
+class UpperResponse(Response):
+    def __init__(self, content = None, status_code = 200, headers = None, media_type = None, background = None):
+        super().__init__(content, status_code, headers, media_type, background)
 
+    def render(self, content):
+        content = content.upper()
+        return super().render(content)
 
-# @app.get("/shipment/{id}")
-# def get_shipment(id: int)-> dict[str, Any]:
-#     if id not in shipments:
-#         return {"details": "Given id doesnt exist!"}
-#     return shipments[id]
+### Custom response
+@app.get("/custom", response_class=JSONResponse, response_model=dict[str,])
+def get_custom_response():
+    return ({
+            "detail": "json response",
+            "timestamp": datetime.now(),
+
+    })
 
 
 @app.get("/scalar", include_in_schema=False)
@@ -38,18 +49,3 @@ def get_scalar_docs():
 
     )
 
-@app.get("/mail")
-async def send_mail(task: BackgroundTasks):
-
-    task.add_task(NotificationService().send_email,
-        subject="Test Email",
-        body="This is a test email sent from FastAPI using FastMail.",
-        recipients=["xifof43652@nyspring.com"]
-        )
-    
-    # await NotificationService().send_email(
-    #     subject="Test Email",
-    #     body="This is a test email sent from FastAPI using FastMail.",
-    #     recipients=["xifof43652@nyspring.com"]
-    #     )
-    return {"detail": "Email sent successfully!"}

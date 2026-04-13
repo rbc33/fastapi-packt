@@ -81,7 +81,7 @@ class ShipmentEvent(SQLModel, table=True):
     )
     location: int
     status: ShipmentStatus
-    desription: str | None = Field(default=None)
+    description: str | None = Field(default=None)
     shipment_id: UUID = Field(foreign_key="shipment.id")
     shipment: Shipment = Relationship(
         back_populates="timeline",
