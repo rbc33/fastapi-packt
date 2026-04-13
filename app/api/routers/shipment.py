@@ -1,14 +1,12 @@
-import re
 from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request, status
-from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from app.api.dependencies import DeliveryPartnerDep, SellerDep, ShipmentServiceDep
-from app.database.models import Shipment
 from app.api.schemas.shipment import ShipmentCreate, ShipmentRead, ShipmentUpdate
+from app.database.models import Shipment
 from app.utils import TEMPLATE_DIR
 
 router = APIRouter(prefix="/shipment", tags=["Shipment"])

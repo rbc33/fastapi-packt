@@ -41,6 +41,15 @@ async def login_delivery_partner(
         "token_type": "bearer",
     }
 
+# Verify email
+@router.get("/verify")
+async def verify_delivery_partner_email(
+    token: str,
+    service: DeliveryPartnerServiceDep,
+):
+    await service.verify_email(token)
+    return {"detail": "Email verified successfully"}
+
 
 @router.patch("/", response_model=DeliveryPartnerRead)
 async def update_delivery_partner(

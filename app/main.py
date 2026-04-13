@@ -1,16 +1,15 @@
 from contextlib import asynccontextmanager
 from datetime import datetime
+from typing import Any
 
-from fastapi import BackgroundTasks, FastAPI, Response
+from fastapi import FastAPI, Response
 from fastapi.responses import JSONResponse
 from scalar_fastapi import get_scalar_api_reference
-from sqlalchemy import JSON
 
-from app.services.notification import NotificationService
+from app.api.router import master_router
 
 #from .database import Database
 from .database.session import create_db_table
-from app.api.router import master_router
 
 
 @asynccontextmanager
@@ -32,7 +31,7 @@ class UpperResponse(Response):
         return super().render(content)
 
 ### Custom response
-@app.get("/custom", response_class=JSONResponse, response_model=dict[str,])
+@app.get("/custom", response_class=JSONResponse, response_model=dict[str,Any])
 def get_custom_response():
     return ({
             "detail": "json response",

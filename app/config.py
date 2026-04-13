@@ -1,12 +1,15 @@
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
 _base_config = SettingsConfigDict(
         env_file=".env",
         env_ignore_empty=True,
         extra="ignore"
         )
+
+class AppSettings(BaseSettings):
+    APP_NAME: str = "FastShip"
+    APP_DOMAIN: str = "localhost:8000"
 class DatabaseSettings(BaseSettings):
     # POSTGRES_PORT: int 
     # POSTGRES_SERVER: str 
@@ -42,7 +45,7 @@ class NotificationSettings(BaseSettings):
     model_config = _base_config
 
     
-
+app_settings = AppSettings() # type: ignore
 db_settings = DatabaseSettings() # type: ignore
 security_settings = SecuritySettings() # type: ignore
 notification_settings = NotificationSettings() # type: ignore

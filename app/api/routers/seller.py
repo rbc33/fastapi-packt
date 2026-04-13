@@ -33,6 +33,15 @@ async def login_seller(
         "token_type": "bearer",
     }
 
+# Verify email
+@router.get("/verify")
+async def verify_seller_email(
+    token: str,
+    service: SellerServiceDep,
+):
+    await service.verify_email(token)
+    return {"detail": "Email verified successfully"}
+
 
 # Logout
 @router.get("/logout")
