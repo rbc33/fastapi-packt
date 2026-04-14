@@ -3,24 +3,24 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 
-from app.api.dependencies import (
+from app.database.redis import add_jti_to_blacklist
+
+from ..dependencies import (
     DeliveryPartnerDep,
     DeliveryPartnerServiceDep,
     get_partner_access_token,
 )
-from app.api.schemas.delivery_partner import (
+from ..schemas.delivery_partner import (
     DeliveryPartnerCreate,
     DeliveryPartnerRead,
     DeliveryPartnerUpdate,
 )
-from app.database.redis import add_jti_to_blacklist
-
 
 router = APIRouter(prefix="/partner", tags=["Delivery Partner"])
 
 
-## SIGN UP
-@router.post("/partner", response_model=DeliveryPartnerRead)
+### Register a new delivery partner
+@router.post("/signup", response_model=DeliveryPartnerRead)
 async def register_delivery_partner(
     seller: DeliveryPartnerCreate,
     service: DeliveryPartnerServiceDep,
@@ -28,48 +28,54 @@ async def register_delivery_partner(
     return await service.add(seller)
 
 
-## LOGIN
+### Login a delivery partner
 @router.post("/token")
 async def login_delivery_partner(
     request_form: Annotated[OAuth2PasswordRequestForm, Depends()],
     service: DeliveryPartnerServiceDep,
 ):
     token = await service.token(request_form.username, request_form.password)
-
     return {
         "access_token": token,
-        "token_type": "bearer",
+        "type": "jwt",
     }
 
-# Verify email
+
+### Verify Delivery Partner Email
 @router.get("/verify")
 async def verify_delivery_partner_email(
     token: str,
     service: DeliveryPartnerServiceDep,
 ):
     await service.verify_email(token)
-    return {"detail": "Email verified successfully"}
+    return {"detail": "Account verified"}
 
 
-@router.patch("/", response_model=DeliveryPartnerRead)
+### Update the logged in delivery partner
+@router.post("/", response_model=DeliveryPartnerRead)
 async def update_delivery_partner(
     partner_update: DeliveryPartnerUpdate,
     partner: DeliveryPartnerDep,
     service: DeliveryPartnerServiceDep,
 ):
-    update = partner_update.model_dump(exclude_unset=True)
+    # Update data with given fields
+    update = partner_update.model_dump(exclude_none=True)
+
     if not update:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="At least one of the fields is required!",
+            detail="No data provided to update",
         )
-    return await service.update(partner.sqlmodel_update(update))
+
+    return await service.update(
+        partner.sqlmodel_update(update),
+    )
 
 
-# Logout
+### Logout a delivery partner
 @router.get("/logout")
 async def logout_delivery_partner(
     token_data: Annotated[dict, Depends(get_partner_access_token)],
 ):
     await add_jti_to_blacklist(token_data["jti"])
-    return {"detail": "Succesfully logged out"}
+    return {"detail": "Successfully logged out"}

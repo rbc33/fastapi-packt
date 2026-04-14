@@ -2,17 +2,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.seller import SellerCreate
 from app.database.models import Seller
-from app.services.user import UserService
+
+from .user import UserService
 
 
 class SellerService(UserService):
     def __init__(self, session: AsyncSession, tasks):
         super().__init__(Seller, session, tasks)
 
-    async def add(self, seller_create: SellerCreate):
+    async def add(self, seller_create: SellerCreate) -> Seller:
         return await self._add_user(
             seller_create.model_dump(),
-            "seller",
+            "seller"
         )
 
     async def token(self, email, password) -> str:

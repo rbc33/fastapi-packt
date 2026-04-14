@@ -1,45 +1,31 @@
-from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.templating import Jinja2Templates
 
-from app.api.dependencies import DeliveryPartnerDep, SellerDep, ShipmentServiceDep
-from app.api.schemas.shipment import ShipmentCreate, ShipmentRead, ShipmentUpdate
-from app.database.models import Shipment
 from app.utils import TEMPLATE_DIR
 
+from ..dependencies import DeliveryPartnerDep, SellerDep, ShipmentServiceDep
+from ..schemas.shipment import ShipmentCreate, ShipmentRead, ShipmentUpdate
+
 router = APIRouter(prefix="/shipment", tags=["Shipment"])
+
 
 templates = Jinja2Templates(TEMPLATE_DIR)
 
 
-@router.get("/", response_model=Shipment)
-async def get_shipment(
-    id: UUID,
-    _: SellerDep,
-    service: ShipmentServiceDep,
-):
-    shipment = await service.get(id)
-    if not shipment:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Given id doesnt exist!"
-        )
-    return shipment
-
-
 ### Tracking details of shipment
 @router.get("/track")
-async def get_track(
-    request: Request,
-    id: UUID,
-    service: ShipmentServiceDep,
-):
+async def get_tracking(request: Request, id: UUID, service: ShipmentServiceDep):
+    # Check for shipment with given id
     shipment = await service.get(id)
+
     context = shipment.model_dump()
-    context["partner"] = shipment.delivery_partner.name
     context["status"] = shipment.status
+    context["partner"] = shipment.delivery_partner.name
     context["timeline"] = shipment.timeline
+    context["timeline"].reverse()
+
     return templates.TemplateResponse(
         request=request,
         name="track.html",
@@ -47,47 +33,32 @@ async def get_track(
     )
 
 
-@router.post("/")
+### Read a shipment by id
+@router.get("/", response_model=ShipmentRead)
+async def get_shipment(id: UUID, service: ShipmentServiceDep):
+    # Check for shipment with given id
+    shipment = await service.get(id)
+
+    if shipment is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Given id doesn't exist!",
+        )
+
+    return shipment
+
+
+### Create a new shipment
+@router.post("/", response_model=ShipmentRead)
 async def submit_shipment(
     seller: SellerDep,
     shipment: ShipmentCreate,
     service: ShipmentServiceDep,
-) -> Shipment:
+):
     return await service.add(shipment, seller)
 
 
-@router.get("/{field}")
-async def get_shipment_field(
-    field: str,
-    id: UUID,
-    _: SellerDep,
-    service: ShipmentServiceDep,
-) -> Any:
-    shipment = await service.get(id)
-    if not shipment:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Given id doesnt exist!"
-        )
-    if not hasattr(shipment, field):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Field doesn't exist"
-        )
-    return getattr(shipment, field)
-
-
-# @router.put("/")
-# async def shipment_update(id: int, data: dict[str, Any])-> dict[str,Any]:
-#     content = data.get("content")
-#     weight = data.get("weight")
-#     status = data.get("status")
-#     shipments[id] = {
-#         "content": content,
-#         "weight": weight,
-#         "status": status
-#     }
-#     return shipments[id]
-
-
+### Update fields of a shipment
 @router.patch("/", response_model=ShipmentRead)
 async def update_shipment(
     id: UUID,
@@ -107,8 +78,7 @@ async def update_shipment(
     return await service.update(id, shipment_update, partner)
 
 
-        
-        
+### Cancel a shipment by id
 @router.get("/cancel", response_model=ShipmentRead)
 async def cancel_shipment(
     id: UUID,
@@ -116,4 +86,3 @@ async def cancel_shipment(
     service: ShipmentServiceDep,
 ):
     return await service.cancel(id, seller)
-

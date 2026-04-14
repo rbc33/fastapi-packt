@@ -1,11 +1,11 @@
 from datetime import datetime
 from enum import Enum
-from uuid import uuid4, UUID
+from uuid import UUID, uuid4
 
 from pydantic import EmailStr
 from sqlalchemy import ARRAY, INTEGER
-from sqlmodel import Field, Relationship, SQLModel, UniqueConstraint, Column
 from sqlalchemy.dialects import postgresql
+from sqlmodel import Column, Field, Relationship, SQLModel
 
 
 class ShipmentStatus(str, Enum):
@@ -26,20 +26,6 @@ class Shipment(SQLModel, table=True):
             primary_key=True,
         )
     )
-
-    client_contact_email: EmailStr  
-    client_contact_phone: int | None
-
-    content: str
-    weight: float = Field(le=25)
-    destination: int
-    estimated_delivery: datetime
-
-    timeline: list["ShipmentEvent"] = Relationship(
-        back_populates="shipment",
-        sa_relationship_kwargs={"lazy": "selectin"},
-    )
-
     created_at: datetime = Field(
         sa_column=Column(
             postgresql.TIMESTAMP,
@@ -47,12 +33,28 @@ class Shipment(SQLModel, table=True):
         )
     )
 
+    client_contact_email: EmailStr
+    client_contact_phone: str | None
+
+    content: str
+    weight: float = Field(le=25)
+    destination: int
+    estimated_delivery: datetime | None
+
+    timeline: list["ShipmentEvent"] = Relationship(
+        back_populates="shipment",
+        sa_relationship_kwargs={"lazy": "selectin"},
+    )
+
     seller_id: UUID = Field(foreign_key="seller.id")
     seller: "Seller" = Relationship(
         back_populates="shipments",
         sa_relationship_kwargs={"lazy": "selectin"},
     )
-    delivery_partner_id: UUID = Field(foreign_key="delivery_partner.id")
+
+    delivery_partner_id: UUID = Field(
+        foreign_key="delivery_partner.id",
+    )
     delivery_partner: "DeliveryPartner" = Relationship(
         back_populates="shipments",
         sa_relationship_kwargs={"lazy": "selectin"},
@@ -61,7 +63,7 @@ class Shipment(SQLModel, table=True):
     @property
     def status(self):
         return self.timeline[-1].status if len(self.timeline) > 0 else None
-    
+
 
 class ShipmentEvent(SQLModel, table=True):
     __tablename__ = "shipment_event"
@@ -79,9 +81,11 @@ class ShipmentEvent(SQLModel, table=True):
             default=datetime.now,
         )
     )
+
     location: int
     status: ShipmentStatus
     description: str | None = Field(default=None)
+
     shipment_id: UUID = Field(foreign_key="shipment.id")
     shipment: Shipment = Relationship(
         back_populates="timeline",
@@ -91,14 +95,14 @@ class ShipmentEvent(SQLModel, table=True):
 
 class User(SQLModel):
     name: str
+
     email: EmailStr
     email_verified: bool = Field(default=False)
-    password_hash: str
+    password_hash: str = Field(exclude=True)
 
 
 class Seller(User, table=True):
     __tablename__ = "seller"
-    __table_args__ = (UniqueConstraint("email"),)
 
     id: UUID = Field(
         sa_column=Column(
@@ -156,7 +160,7 @@ class DeliveryPartner(User, table=True):
             shipment
             for shipment in self.shipments
             if shipment.status != ShipmentStatus.delivered
-            and shipment.status != ShipmentStatus.cancelled
+            or shipment.status != ShipmentStatus.cancelled
         ]
 
     @property

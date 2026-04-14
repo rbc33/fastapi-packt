@@ -4,27 +4,19 @@ from uuid import uuid4
 
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 import jwt
-from fastapi import HTTPException, status
 
 from app.config import security_settings
+
+_serializer = URLSafeTimedSerializer(security_settings.JWT_SECRET)
+
 
 APP_DIR = Path(__file__).resolve().parent
 TEMPLATE_DIR = APP_DIR / "templates"
 
-_serializer = URLSafeTimedSerializer(security_settings.JWT_SECRET)
-
-# # Generate token
-# token = serializer.dumps(
-#     {"email": "test@example.com"},
-# )
-
-# # Decode token
-# token_data = serializer.loads(token, max_age=timedelta(days=1).total_seconds())
-
 
 def generate_access_token(
     data: dict,
-    expiry: timedelta = timedelta(days=1),
+    expiry: timedelta = timedelta(days=7),
 ) -> str:
     return jwt.encode(
         payload={
@@ -44,18 +36,11 @@ def decode_access_token(token: str) -> dict | None:
             key=security_settings.JWT_SECRET,
             algorithms=[security_settings.JWT_ALGORITHM],
         )
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Expired token"
-        )
     except jwt.PyJWTError:
         return None
 
 
-def generate_url_safe_token(
-    data: dict,
-    salt: str | None = None,
-) -> str:
+def generate_url_safe_token(data: dict, salt: str | None = None) -> str:
     return _serializer.dumps(data, salt=salt)
 
 
@@ -63,7 +48,7 @@ def decode_url_safe_token(
     token: str,
     salt: str | None = None,
     expiry: timedelta | None = None,
-) -> dict:
+) -> dict | None:
     try:
         return _serializer.loads(
             token,
