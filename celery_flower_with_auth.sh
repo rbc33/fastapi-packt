@@ -1,0 +1,1 @@
+celery -A app.worker.tasks flower --basic_auth=admin:passw
