@@ -3,6 +3,8 @@ from app.database.models import Shipment, ShipmentEvent, ShipmentStatus
 from app.database.redis import add_shipment_verification_code
 from app.services.base import BaseService
 from app.services.notification import NotificationService
+from app.config import app_settings
+from app.utils import generate_access_token, generate_url_safe_token
 
 
 class ShipmentEventService(BaseService):
@@ -17,11 +19,11 @@ class ShipmentEventService(BaseService):
         status: ShipmentStatus = None,
         description: str = None,
     ) -> ShipmentEvent:
-        if not location or not status:
+        if location is None or status is None:
             last_event = await self.get_latest_event(shipment)
 
-            location = location if location else last_event.location
-            status = status if status else last_event.status
+            location = location if location is not None else last_event.location
+            status = status if status is not None else last_event.status
 
         new_event = ShipmentEvent(
             location=location,
@@ -94,6 +96,8 @@ class ShipmentEventService(BaseService):
             case ShipmentStatus.delivered:
                 subject = "Your Order is Delivered ✅"
                 context["seller"] = shipment.seller.name
+                token = generate_url_safe_token({"id": str(shipment.id)})
+                context["review_url"] = f"http://{app_settings.APP_DOMAIN}/shipment/review?token={token}"
                 template_name = "mail_delivered.html"
 
             case ShipmentStatus.cancelled:

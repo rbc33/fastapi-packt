@@ -1,3 +1,4 @@
+from calendar import c
 from datetime import datetime
 from uuid import UUID
 
@@ -26,4 +27,8 @@ class ShipmentUpdate(BaseModel):
     location: int | None = Field(default=None)
     status: ShipmentStatus | None = Field(default=None)
     verification_code: str | None = Field(default=None, exclude=True)
+
+class ShipmentReview(BaseModel):
+    rating: int = Field(ge=1, le=5)
+    comment: str | None = Field(default=None)
     
