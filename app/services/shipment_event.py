@@ -5,12 +5,12 @@ from app.services.base import BaseService
 from app.services.notification import NotificationService
 from app.config import app_settings
 from app.utils import generate_access_token, generate_url_safe_token
+from app.worker.tasks import send_email_with_template, send_sms
 
 
 class ShipmentEventService(BaseService):
-    def __init__(self, session, tasks):
+    def __init__(self, session):
         super().__init__(ShipmentEvent, session)
-        self.notification_service = NotificationService(tasks)
 
     async def add(
         self,
@@ -84,7 +84,7 @@ class ShipmentEventService(BaseService):
                 await add_shipment_verification_code(shipment.id, code)
 
                 if shipment.client_contact_phone:
-                    await self.notification_service.send_sms(
+                    send_sms.delay(
                         to=shipment.client_contact_phone,
                         body=f"Your order is arriving soon! Share the {code} code with your "
                         "delivery executive to receive your package."
@@ -104,7 +104,7 @@ class ShipmentEventService(BaseService):
                 subject = "Your Order is Cancelled ❌"
                 template_name = "mail_cancelled.html"
 
-        await self.notification_service.send_email_with_template(
+        send_email_with_template.delay(
             recipients=[shipment.client_contact_email],
             subject=subject,
             context=context,
