@@ -2,8 +2,10 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
+from httpx import Client
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import ClientNotAuthorized, InvalidToken
 from app.core.security import oauth2_scheme_partner, oauth2_scheme_seller
 from app.database.models import DeliveryPartner, Seller
 from app.database.redis import is_jti_blacklisted
@@ -24,10 +26,7 @@ async def _get_access_token(token: str) -> dict:
 
     # Validate the token
     if data is None or await is_jti_blacklisted(data["jti"]):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired access token",
-        )
+        raise InvalidToken()
 
     return data
 
@@ -57,10 +56,7 @@ async def get_current_seller(
     )
 
     if seller is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authorized",
-        )
+        raise ClientNotAuthorized()
 
     return seller
 
@@ -76,10 +72,7 @@ async def get_current_partner(
     )
 
     if partner is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authorized",
-        )
+       raise ClientNotAuthorized()
 
     return partner
 

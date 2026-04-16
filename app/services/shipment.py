@@ -2,10 +2,17 @@ from datetime import datetime, timedelta
 from uuid import UUID
 
 from fastapi import HTTPException, status
+from httpx import Client
+from regex import E
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.routers import shipment
 from app.api.schemas.shipment import ShipmentCreate, ShipmentReview, ShipmentUpdate
-from app.database.models import DeliveryPartner, Review, Seller, Shipment, ShipmentStatus
+from sqlalchemy.orm import selectinload
+from sqlmodel import select
+
+from app.core.exceptions import ClientNotAuthorized, EntityNotFound, InvalidToken
+from app.database.models import DeliveryPartner, Review, Seller, Shipment, ShipmentStatus, ShipmentTag, Tag
 from app.database.redis import get_shipment_verification_code
 from app.services.shipment_event import ShipmentEventService
 from app.utils import decode_url_safe_token
@@ -27,7 +34,20 @@ class ShipmentService(BaseService):
 
     # Get a shipment by id
     async def get(self, id: UUID) -> Shipment | None:
-        return await self._get(id)
+        shipment = await self._get(id)
+        if shipment is None:
+            raise EntityNotFound()
+        return shipment
+
+    # Get all shipments with a given tag
+    async def get_by_tag(self, tag: Tag) -> list[Shipment]:
+        result = await self.session.execute(
+            select(Shipment)
+            .join(ShipmentTag, ShipmentTag.shipment_id == Shipment.id)
+            .where(ShipmentTag.tag_id == tag.id)
+            .options(selectinload(Shipment.tags))
+        )
+        return result.scalars().all()
 
     # Add a new shipment
     async def add(self, shipment_create: ShipmentCreate, seller: Seller) -> Shipment:
@@ -69,19 +89,13 @@ class ShipmentService(BaseService):
         shipment = await self.get(id)
 
         if shipment.delivery_partner_id != partner.id:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not authorized",
-            )
+            raise ClientNotAuthorized()
 
         if shipment_update.status == ShipmentStatus.delivered:
             code = await get_shipment_verification_code(shipment.id)
 
             if code != shipment_update.verification_code:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Client not authorized",
-                )
+                raise 
 
         update = shipment_update.model_dump(
             exclude_none=True,
@@ -94,15 +108,28 @@ class ShipmentService(BaseService):
         )
 
         return await self._update(shipment)
+
+    async def add_tag(self, id: UUID, tag_name: str):
+        shipment = await self.get(id)
+        shipment.tags.append(await tag_name.tag(self.session))
+
+        return await self._update(shipment)
+        
+    async def remove_tag(self, id: UUID, tag_name: str):
+        shipment = await self.get(id)
+        try:
+            shipment.tags.remove(await tag_name.tag(self.session))
+        except ValueError:
+            raise EntityNotFound()
+        
+        return await self._update(shipment)
+        
     
     async def rate(self, token: str, rating: int, comment: str ):
         token_data = decode_url_safe_token(token)
 
         if not token_data:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token",
-            )
+            raise InvalidToken()
 
         shipment = await self.get(UUID(token_data["id"]))
         # Add the review to the shipment

@@ -5,7 +5,28 @@ from uuid import UUID, uuid4
 from pydantic import EmailStr
 from sqlalchemy import ARRAY, INTEGER
 from sqlalchemy.dialects import postgresql
-from sqlmodel import Column, Field, Relationship, SQLModel
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import Column, Field, Relationship, SQLModel, select
+
+
+
+class TagName(str, Enum):
+    EXPRESS = "express"
+    STANDART = "standard"
+    FRAGILE = "fragile"
+    HEAVY = "heavy"
+    INTERNATIONAL = "international"
+    DOMESTIC = "domestic"
+    TEMPERATURE_SENSITIVE = "temperature_sensitive"
+    GIFT = "gift"
+    RETURN = "return"
+    DOCUMENTS = "documents"
+
+    async def tag(self, session: AsyncSession):
+        return await session.scalar(
+            select(Tag).where(Tag.name == self.value)
+        )
+
 
 
 class ShipmentStatus(str, Enum):
@@ -15,6 +36,38 @@ class ShipmentStatus(str, Enum):
     delivered = "delivered"
     cancelled = "cancelled"
 
+
+class ShipmentTag(SQLModel, table=True):
+    __tablename__ = "shipment_tag"
+
+    shipment_id: UUID = Field(
+            foreign_key="shipment.id",
+            primary_key=True,
+    )
+    tag_id: UUID = Field(
+            foreign_key="tag.id",
+            primary_key=True,
+    )
+
+
+class Tag(SQLModel, table=True):
+    __tablename__ = "tag"
+
+    id: UUID = Field(
+        sa_column=Column(
+            postgresql.UUID,
+            default=uuid4,
+            primary_key=True,
+        )
+    )
+    name: TagName
+    instruction: str
+
+    shipments: list["Shipment"] = Relationship(
+        back_populates="tags",
+        link_model=ShipmentTag,
+        sa_relationship_kwargs={"lazy": "immediate"},
+    )
 
 class Shipment(SQLModel, table=True):
     __tablename__ = "shipment"
@@ -63,6 +116,12 @@ class Shipment(SQLModel, table=True):
     reviews: list["Review"] = Relationship(
         back_populates="shipment",
         sa_relationship_kwargs={"lazy": "selectin"},
+    )
+
+    tags: list[Tag] = Relationship(
+        back_populates="shipments",
+        link_model=ShipmentTag,
+        sa_relationship_kwargs={"lazy": "immediate"},
     )
 
 

@@ -4,11 +4,15 @@ from uuid import UUID
 
 from fastapi import APIRouter, Form, HTTPException, Request, status
 from fastapi.templating import Jinja2Templates
+from regex import T
+from requests import Session
 
+from app.core.exceptions import BadRequest
+from app.database.models import TagName
 from app.utils import TEMPLATE_DIR
 from app.config import app_settings
 
-from ..dependencies import DeliveryPartnerDep, SellerDep, ShipmentServiceDep
+from ..dependencies import DeliveryPartnerDep, SellerDep, SessionDep, ShipmentServiceDep
 from ..schemas.shipment import (
     ShipmentCreate,
     ShipmentRead,
@@ -44,15 +48,8 @@ async def get_tracking(request: Request, id: UUID, service: ShipmentServiceDep):
 @router.get("/", response_model=ShipmentRead)
 async def get_shipment(id: UUID, service: ShipmentServiceDep):
     # Check for shipment with given id
-    shipment = await service.get(id)
-
-    if shipment is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Given id doesn't exist!",
-        )
-
-    return shipment
+    return await service.get(id)
+    
 
 
 ### Create a new shipment
@@ -77,12 +74,39 @@ async def update_shipment(
     update = shipment_update.model_dump(exclude_none=True)
 
     if not update:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No data provided to update",
-        )
+        raise BadRequest()
 
     return await service.update(id, shipment_update, partner)
+
+### Get all shipments with a given tag
+@router.get("/tagged", response_model=list[ShipmentRead])
+async def get_shipments_by_tag(
+    tag_name: TagName,
+    session: SessionDep,
+    service: ShipmentServiceDep,
+):
+    tag = await tag_name.tag(session)
+    return await service.get_by_tag(tag)
+
+
+### Add a tag to a shipment
+@router.get("/tag", response_model=ShipmentRead)
+async def add_tag_to_shipment(
+    id: UUID,
+    tag_name: TagName,
+    service: ShipmentServiceDep,
+):
+    return await service.add_tag(id, tag_name)
+
+
+### Add a tag to a shipment
+@router.delete("/tag", response_model=ShipmentRead)
+async def remove_tag_from_shipment(
+    id: UUID,
+    tag_name: TagName,
+    service: ShipmentServiceDep,
+):
+    return await service.remove_tag(id, tag_name)
 
 
 ### Cancel a shipment by id
@@ -101,7 +125,9 @@ async def submit_review_page(request: Request, token: str):
     return templates.TemplateResponse(
         request=request,
         name="review.html",
-        context={"review_url": f"http://{app_settings.APP_DOMAIN}/shipment/review?token={token}"},
+        context={
+            "review_url": f"http://{app_settings.APP_DOMAIN}/shipment/review?token={token}"
+        },
     )
 
 
