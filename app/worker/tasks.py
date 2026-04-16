@@ -28,6 +28,11 @@ app = Celery(
     include=["app.worker.tasks"],
 )
 
+@app.task
+def add_log(log:str)->None:
+    with open("file.log", "a") as file:
+        file.write(f"{log}\n") 
+
 
 @app.task
 def send_mail(recipients: list[str], subject: str, body: str):
