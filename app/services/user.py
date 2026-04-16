@@ -1,10 +1,10 @@
 from datetime import timedelta
 from uuid import UUID
-from fastapi import HTTPException, status
 import bcrypt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import BadCredentials, EmailNotVerified, InvalidToken
 from app.database.models import User
 from app.utils import decode_url_safe_token, generate_access_token, generate_url_safe_token
 from app.config import app_settings
@@ -56,10 +56,7 @@ class UserService(BaseService):
         token_data = decode_url_safe_token(token)
         # Validate the token
         if not token_data:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid token"
-            )
+            raise InvalidToken()
         # Update the verified field on the user
         # to mark user as verified
         user = await self._get(UUID(token_data["id"]))
@@ -77,16 +74,10 @@ class UserService(BaseService):
         user = await self._get_by_email(email)
 
         if user is None or not verify_password(password, user.password_hash):
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Email or password is incorrect",
-            )
+            raise BadCredentials()
         
         if not user.email_verified:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Email not verified",
-            )
+            raise EmailNotVerified()
 
         return generate_access_token(
             data={

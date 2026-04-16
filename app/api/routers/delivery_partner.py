@@ -1,9 +1,9 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 
-from app.core.exceptions import BadRequest
+from app.core.exceptions import NothingToUpdate
 from app.database.redis import add_jti_to_blacklist
 
 from ..dependencies import (
@@ -63,7 +63,7 @@ async def update_delivery_partner(
     update = partner_update.model_dump(exclude_none=True)
 
     if not update:
-        raise BadRequest()
+        raise NothingToUpdate()
 
     return await service.update(
         partner.sqlmodel_update(update),

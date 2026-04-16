@@ -2,9 +2,8 @@ from random import randint
 from app.database.models import Shipment, ShipmentEvent, ShipmentStatus
 from app.database.redis import add_shipment_verification_code
 from app.services.base import BaseService
-from app.services.notification import NotificationService
 from app.config import app_settings
-from app.utils import generate_access_token, generate_url_safe_token
+from app.utils import  generate_url_safe_token
 from app.worker.tasks import send_email_with_template, send_sms
 
 

@@ -1,6 +1,5 @@
 from typing import Sequence
 
-from fastapi import HTTPException, status
 from sqlmodel import select, any_
 
 from app.api.schemas.delivery_partner import DeliveryPartnerCreate

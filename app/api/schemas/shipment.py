@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field
 
-from app.database.models import ShipmentEvent, ShipmentStatus, Tag, TagName
+from app.database.models import ShipmentEvent, ShipmentStatus, TagName
 
 
 class BaseShipment(BaseModel):

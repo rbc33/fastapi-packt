@@ -1,13 +1,9 @@
 from datetime import datetime, timedelta
 from uuid import UUID
 
-from fastapi import HTTPException, status
-from httpx import Client
-from regex import E
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.routers import shipment
-from app.api.schemas.shipment import ShipmentCreate, ShipmentReview, ShipmentUpdate
+from app.api.schemas.shipment import ShipmentCreate, ShipmentUpdate
 from sqlalchemy.orm import selectinload
 from sqlmodel import select
 
@@ -147,10 +143,7 @@ class ShipmentService(BaseService):
         shipment = await self.get(id)
 
         if shipment.seller_id != seller.id:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not Authorized",
-            )
+            raise ClientNotAuthorized()
 
         event = await self.event_service.add(
             shipment=shipment,

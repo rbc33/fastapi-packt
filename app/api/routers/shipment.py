@@ -1,13 +1,10 @@
-import re
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Form, HTTPException, Request, status
+from fastapi import APIRouter, Form, Request
 from fastapi.templating import Jinja2Templates
-from regex import T
-from requests import Session
 
-from app.core.exceptions import BadRequest
+from app.core.exceptions import NothingToUpdate
 from app.database.models import TagName
 from app.utils import TEMPLATE_DIR
 from app.config import app_settings
@@ -74,7 +71,7 @@ async def update_shipment(
     update = shipment_update.model_dump(exclude_none=True)
 
     if not update:
-        raise BadRequest()
+        raise NothingToUpdate()
 
     return await service.update(id, shipment_update, partner)
 

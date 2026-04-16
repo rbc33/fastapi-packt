@@ -16,5 +16,8 @@ class InvalidToken(FastShipError):
 class DeliveryPartnerNotAvailable(FastShipError):
     """Delivery partner not found."""
 
-class BadRequest(FastShipError):
+class NothingToUpdate(FastShipError):
     """Bad request no data provided to update"""
+
+class EmailNotVerified(FastShipError):
+    """Email is not verified."""
