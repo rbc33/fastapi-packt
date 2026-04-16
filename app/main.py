@@ -2,9 +2,12 @@ from fastapi import FastAPI
 from scalar_fastapi import get_scalar_api_reference
 
 from app.api.router import master_router
+from app.core.exceptions import add_exception_handlers
 
 app = FastAPI()
 app.include_router(master_router)
+add_exception_handlers(app)
+
 
 ### Scalar API Documentation
 @app.get("/scalar", include_in_schema=False)
