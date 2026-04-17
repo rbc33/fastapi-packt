@@ -5,6 +5,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.templating import Jinja2Templates
 from pydantic import EmailStr
 
+from app.api.schemas.tag import APITag
 from app.database.redis import add_jti_to_blacklist
 from app.utils import TEMPLATE_DIR
 from app.config import app_settings
@@ -12,7 +13,7 @@ from app.config import app_settings
 from ..dependencies import SellerServiceDep, get_seller_access_token
 from ..schemas.seller import SellerCreate, SellerRead
 
-router = APIRouter(prefix="/seller", tags=["Seller"])
+router = APIRouter(prefix="/seller", tags=[APITag.SELLER])
 
 
 ### Register a new seller

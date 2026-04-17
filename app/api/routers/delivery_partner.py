@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 
+from app.api.schemas.tag import APITag
 from app.core.exceptions import NothingToUpdate
 from app.database.redis import add_jti_to_blacklist
 
@@ -17,7 +18,7 @@ from ..schemas.delivery_partner import (
     DeliveryPartnerUpdate,
 )
 
-router = APIRouter(prefix="/partner", tags=["Delivery Partner"])
+router = APIRouter(prefix="/partner", tags=[APITag.PARTNER])
 
 
 ### Register a new delivery partner

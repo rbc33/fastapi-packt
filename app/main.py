@@ -5,16 +5,47 @@ from fastapi import FastAPI, Request, Response
 from scalar_fastapi import get_scalar_api_reference
 
 from app.api.router import master_router
+from app.api.schemas.tag import APITag
 from app.core.exceptions import add_exception_handlers
 from app.worker.tasks import add_log
 
-app = FastAPI()
+description = """
+Delivery Managment system for sellers and delivery agents
+
+### Seller
+- Submit shipment effortlessly
+- Share tracking links with customers
+
+### Delivery Agent
+- Auto accept shipment
+- Trak and update shipments status
+- Email and sms notification
+"""
+
+app = FastAPI(
+    title="Fastship",
+    description=description,
+    docs_url=None,
+    redoc_url=None,
+    version="0.1.0",
+    terms_of_service="https://fastship/terms/",
+    contact={
+        "name": "Fastship Support",
+        "url": "https://fastship/support/",
+        "emsil": "support@fastship.com",
+    },
+    openapi_tags=[
+        {"name": APITag.SHIPMENT, "description": "Operations related to shipments",},
+        {"name": APITag.SELLER, "description": "Operations related to seller"},
+        {"name": APITag.PARTNER, "description": "Operations related to delivery partner"},
+    ],
+)
 
 app.add_middleware(
     CORSMiddleware,
     # allow_origins=["http://localhost:5500"],
     allow_origins=["*"],
-    allow_methods=["*"]
+    allow_methods=["*"],
 )
 
 app.include_router(master_router)
@@ -36,7 +67,7 @@ async def custom_middleware(request: Request, call_next):
 
 
 ### Scalar API Documentation
-@app.get("/scalar", include_in_schema=False)
+@app.get("/docs", include_in_schema=False)
 def get_scalar_docs():
     return get_scalar_api_reference(
         openapi_url=app.openapi_url,

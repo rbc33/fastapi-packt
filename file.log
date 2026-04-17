@@ -1,1 +1,2 @@
 GET http://localhost:8000/shipment/?id=c2bef742-8528-4c61-a055-f4445f392b52 (200) 0.11 s
+GET http://localhost:8000/seller/verify?token=eyJlbWFpbCI6InRlc3RAYWJjZC5jb20iLCJpZCI6IjJiZWExNDlkLTExMDItNGU4MC04MjQ5LWZiNWE0M2M0YmQxYiJ9.ad54xw.w29zvkVJJxNzfkkL9TxSXkHcGFU (200) 0.12 s

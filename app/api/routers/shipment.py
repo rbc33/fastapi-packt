@@ -1,9 +1,11 @@
+from turtle import st
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Form, Request
+from fastapi import APIRouter, Form, Request, status
 from fastapi.templating import Jinja2Templates
 
+from app.api.schemas.tag import APITag
 from app.core.exceptions import NothingToUpdate
 from app.database.models import TagName
 from app.utils import TEMPLATE_DIR
@@ -16,14 +18,14 @@ from ..schemas.shipment import (
     ShipmentUpdate,
 )
 
-router = APIRouter(prefix="/shipment", tags=["Shipment"])
+router = APIRouter(prefix="/shipment", tags=[APITag.SHIPMENT])
 
 
 templates = Jinja2Templates(TEMPLATE_DIR)
 
 
 ### Tracking details of shipment
-@router.get("/track")
+@router.get("/track", include_in_schema=False)
 async def get_tracking(request: Request, id: UUID, service: ShipmentServiceDep):
     # Check for shipment with given id
     shipment = await service.get(id)
@@ -46,11 +48,35 @@ async def get_tracking(request: Request, id: UUID, service: ShipmentServiceDep):
 async def get_shipment(id: UUID, service: ShipmentServiceDep):
     # Check for shipment with given id
     return await service.get(id)
-    
 
 
 ### Create a new shipment
-@router.post("/", response_model=ShipmentRead)
+@router.post(
+    "/",
+    response_model=ShipmentRead,
+    name="Create Shipment",
+    description="Submit a new **shipment**",
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        status.HTTP_201_CREATED: {
+            "description": "Shipment created",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                        "content": "Electronics",
+                        "weight": 5.0,
+                        "destination": 10001,
+                        "timeline": [],
+                        "estimated_delivery": "2026-04-20T10:00:00",
+                        "tags": [],
+                    }
+                }
+            },
+        },
+        status.HTTP_406_NOT_ACCEPTABLE: {"description": "Delivery partner is not available"},
+    }
+)
 async def submit_shipment(
     seller: SellerDep,
     shipment: ShipmentCreate,
@@ -74,6 +100,7 @@ async def update_shipment(
         raise NothingToUpdate()
 
     return await service.update(id, shipment_update, partner)
+
 
 ### Get all shipments with a given tag
 @router.get("/tagged", response_model=list[ShipmentRead])
