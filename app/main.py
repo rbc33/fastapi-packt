@@ -1,7 +1,9 @@
 from time import perf_counter
+from typing import Annotated
+from uuid import UUID, uuid4
 from fastapi.middleware.cors import CORSMiddleware
 
-from fastapi import FastAPI, Request, Response
+from fastapi import Depends, FastAPI, Request, Response
 from scalar_fastapi import get_scalar_api_reference
 
 from app.api.router import master_router
@@ -65,6 +67,14 @@ async def custom_middleware(request: Request, call_next):
     )
     return response
 
+# Example Dependency
+def get_id():
+    return uuid4()
+
+# Server Running Status
+@app.get("/")
+async def read_root(id: Annotated[UUID, Depends(get_id)]):
+    return {"detail": str(id)}
 
 ### Scalar API Documentation
 @app.get("/docs", include_in_schema=False)

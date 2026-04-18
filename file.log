@@ -1,2 +1,16 @@
 GET http://localhost:8000/shipment/?id=c2bef742-8528-4c61-a055-f4445f392b52 (200) 0.11 s
 GET http://localhost:8000/seller/verify?token=eyJlbWFpbCI6InRlc3RAYWJjZC5jb20iLCJpZCI6IjJiZWExNDlkLTExMDItNGU4MC04MjQ5LWZiNWE0M2M0YmQxYiJ9.ad54xw.w29zvkVJJxNzfkkL9TxSXkHcGFU (200) 0.12 s
+GET http://testserver/ (200) 0.0 s
+GET http://testserver/ (200) 0.0 s
+GET http://testserver/ (200) 0.0 s
+GET http://testserver/ (200) 0.0 s
+GET http://testserver/ (200) 0.0 s
+GET http://testserver/ (200) 0.0 s
+GET http://testserver/ (200) 0.0 s
+GET http://testserver/ (200) 0.0 s
+GET http://testserver/ (200) 0.0 s
+GET http://testserver/ (200) 0.0 s
+GET http://testserver/shipments?id=255c2488-bb28-4b67-ae22-c8d3497a3b72/ (404) 0.0 s
+GET http://testserver/shipments?id=343a57d5-e1c0-4fdb-adfd-b4926f0e1b33/ (404) 0.0 s
+GET http://testserver/shipments?id=343a57d5-e1c0-4fdb-adfd-b4926f0e1b33/ (404) 0.0 s
+GET http://testserver/shipment?id=343a57d5-e1c0-4fdb-adfd-b4926f0e1b33 (307) 0.0 s
