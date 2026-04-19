@@ -4,7 +4,7 @@ import bcrypt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import BadCredentials, EmailNotVerified, InvalidToken
+from app.core.exceptions import BadCredentials, BadPassword, EmailNotVerified, InvalidToken, PasswordValueError
 from app.database.models import User
 from app.utils import decode_url_safe_token, generate_access_token, generate_url_safe_token
 from app.config import app_settings
@@ -27,10 +27,13 @@ class UserService(BaseService):
         self.session = session
 
     async def _add_user(self, data: dict, router_prefix: str) -> User:
-        user = self.model(
-            **data,
-            password_hash=hash_password(data["password"]),
-        )
+        try:
+            user = self.model(
+                **data,
+                password_hash=hash_password(data["password"]),
+            )
+        except PasswordValueError as e:
+            raise BadPassword(str(e))
         # Add the user to database and get refreshed data
         user = await self._add(user)
         # Generate the token with user id

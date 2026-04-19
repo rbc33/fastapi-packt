@@ -1,6 +1,4 @@
 import json
-from datetime import datetime, timedelta
-from uuid import UUID, uuid4
 
 from httpx import ASGITransport, AsyncClient
 import pytest_asyncio
@@ -37,17 +35,24 @@ ARRAY.bind_processor = _array_bind
 ARRAY.result_processor = _array_result
 
 # --- App imports after patches ---
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 from app.database.session import get_session
 from app.main import app
-from app.database.models import Seller, DeliveryPartner, Shipment, ShipmentEvent, ShipmentStatus
 from app.worker import tasks as worker_tasks
+from app.tests import example
+import app.database.redis as redis_module
 
+# Mock Celery tasks (no broker in tests)
 worker_tasks.add_log.delay = MagicMock()
+worker_tasks.send_email_with_template.delay = MagicMock()
+worker_tasks.send_mail.delay = MagicMock()
 
-# Fixed IDs for deterministic tests
-TEST_SHIPMENT_ID = UUID("343a57d5-e1c0-4fdb-adfd-b4926f0e1b33")
+# Mock Redis (no Redis server in tests)
+redis_module.add_jti_to_blacklist = AsyncMock()
+redis_module.is_jti_blacklisted = AsyncMock(return_value=False)
+redis_module.add_shipment_verification_code = AsyncMock()
+redis_module.get_shipment_verification_code = AsyncMock(return_value=None)
 
 engine = create_async_engine(url="sqlite+aiosqlite:///:memory:")
 test_session = sessionmaker(bind=engine, expire_on_commit=False, class_=AsyncSession)
@@ -56,6 +61,25 @@ test_session = sessionmaker(bind=engine, expire_on_commit=False, class_=AsyncSes
 async def get_session_override():
     async with test_session() as session:
         yield session
+
+@pytest_asyncio.fixture(scope="session")
+async def seller_token(client: AsyncClient):
+    response = await client.post(
+        "/seller/token",
+        data={"username": example.SELLER["email"], "password": example.SELLER["password"]},
+    )
+    assert "access_token" in response.json()
+    return response.json()["access_token"]
+
+
+@pytest_asyncio.fixture(scope="session")
+async def partner_token(client: AsyncClient):
+    response = await client.post(
+        "/partner/token",
+        data={"username": example.DELIVERY_PARTNER["email"], "password": example.DELIVERY_PARTNER["password"]},
+    )
+    assert "access_token" in response.json()
+    return response.json()["access_token"]
 
 
 @pytest_asyncio.fixture(scope="session")
@@ -77,53 +101,7 @@ async def setup_and_teardown():
         await conn.run_sync(SQLModel.metadata.create_all)
 
     async with test_session() as session:
-        seller = Seller(
-            id=uuid4(),
-            name="Test Seller",
-            email="seller@test.com",
-            password_hash="hashed",
-            created_at=datetime.now(),
-        )
-        partner = DeliveryPartner(
-            id=uuid4(),
-            name="Test Partner",
-            email="partner@test.com",
-            password_hash="hashed",
-            serviceable_zip_codes=[10001, 10002],
-            max_handling_capacity=10,
-            created_at=datetime.now(),
-        )
-        session.add(seller)
-        session.add(partner)
-        await session.commit()
-        await session.refresh(seller)
-        await session.refresh(partner)
-
-        shipment = Shipment(
-            id=TEST_SHIPMENT_ID,
-            content="Test Package",
-            weight=2.5,
-            destination=10001,
-            client_contact_email="client@test.com",
-            client_contact_phone=None,
-            estimated_delivery=datetime.now() + timedelta(days=3),
-            seller_id=seller.id,
-            delivery_partner_id=partner.id,
-            created_at=datetime.now(),
-        )
-        session.add(shipment)
-        await session.commit()
-
-        event = ShipmentEvent(
-            id=uuid4(),
-            location=10001,
-            status=ShipmentStatus.placed,
-            shipment_id=TEST_SHIPMENT_ID,
-            created_at=datetime.now(),
-        )
-        session.add(event)
-        await session.commit()
-
+        await example.create_test_data(session)
     yield
 
     app.dependency_overrides.clear()

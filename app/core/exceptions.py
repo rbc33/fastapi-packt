@@ -7,6 +7,10 @@ class FastShipError(Exception):
     """Base class for all FastShip exceptions."""
     status_code: int = status.HTTP_400_BAD_REQUEST
 
+
+class PasswordValueError(ValueError):
+    """Password does not meet validation requirements."""
+
 class EntityNotFound(FastShipError):
     """Entity is not found in the database."""
     status_code = status.HTTP_404_NOT_FOUND
@@ -31,6 +35,14 @@ class NothingToUpdate(FastShipError):
     """Bad request no data provided to update."""
     status_code = status.HTTP_400_BAD_REQUEST
 
+class EmailAlreadyExists(FastShipError):
+    """An account with this email already exists."""
+    status_code = status.HTTP_409_CONFLICT
+
+class BadPassword(FastShipError):
+    """Password does not meet the requirements."""
+    status_code = status.HTTP_400_BAD_REQUEST
+
 class EmailNotVerified(FastShipError):
     """Email is not verified."""
     status_code = status.HTTP_401_UNAUTHORIZED
@@ -38,9 +50,10 @@ class EmailNotVerified(FastShipError):
 
 def _get_handler(status:int, detail:str):
     def handler(request: Request, exception: Exception) -> JSONResponse:
-        from rich import panel, print
+        from rich import print
+        from rich.panel import Panel
 
-        print(panel.Panel(f"Handled: {exception.__class__.__name__}"))
+        print(Panel(f"Handled: {exception.__class__.__name__}"))
         
         return JSONResponse(
             status_code=status,

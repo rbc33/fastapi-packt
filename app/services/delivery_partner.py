@@ -1,6 +1,6 @@
 from typing import Sequence
 
-from sqlmodel import select, any_
+from sqlmodel import select
 
 from app.api.schemas.delivery_partner import DeliveryPartnerCreate
 from app.core.exceptions import DeliveryPartnerNotAvailable
@@ -17,13 +17,8 @@ class DeliveryPartnerService(UserService):
         return await self._add_user(delivery_partner.model_dump(), "partner")
 
     async def get_partner_by_zipcode(self, zipcode: int) -> Sequence[DeliveryPartner]:
-        return (
-            await self.session.scalars(
-                select(DeliveryPartner).where(
-                    zipcode == any_(DeliveryPartner.serviceable_zip_codes)
-                )
-            )
-        ).all()
+        partners = (await self.session.scalars(select(DeliveryPartner))).all()
+        return [p for p in partners if p.serviceable_zip_codes and zipcode in p.serviceable_zip_codes]
     
     async def assign_shipment(self, shipment: Shipment):
         eligible_partners = await self.get_partner_by_zipcode(shipment.destination)

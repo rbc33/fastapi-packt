@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from uuid import uuid4
+from rich import print as rprint
+from rich.panel import Panel
 
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 import jwt
@@ -57,3 +59,6 @@ def decode_url_safe_token(
         )
     except (BadSignature, SignatureExpired):
         return None
+
+def print_label(something):
+    rprint(Panel(str(something), title="LOG", expand=False))
